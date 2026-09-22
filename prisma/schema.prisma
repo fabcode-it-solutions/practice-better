@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+
+
+// ─── Address Conflict Tracking ────────────────────────────────────────────────
+// Stores pending address conflicts between Shopify checkout and PB intake forms.
+// Each row represents one unresolved (or resolved) conflict email sent to a client.
+model AddressConflict {
+  id              Int       @id @default(autoincrement())
+
+  // Unique token sent in the email link — used to identify the conflict on resolution
+  token           String    @unique
+
+  // Client info
+  clientEmail     String
+  clientName      String
+  pbClientId      String    // Practice Better client record ID
+  orderId         String    // Shopify order ID
+
+  // Addresses stored as JSON strings
+  shopifyAddress  String    // JSON: the address from Shopify checkout
+  pbAddress       String    // JSON: the address from Practice Better profile
+
+  // Workflow state
+  // "pending"  → email sent, awaiting client choice
+  // "resolved" → client made a choice
+  // "expired"  → token expired before client responded
+  status          String    @default("pending")
+  resolvedWith    String?   // "shopify" | "intake" — set on resolution
+  resolvedAt      DateTime?
+  expiresAt       DateTime
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
